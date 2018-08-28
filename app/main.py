@@ -475,10 +475,10 @@ if __name__ == '__main__':
 
     DEBUG = False
     # For HTTPS with or without debugging
-    app.run(debug=DEBUG, host=host, port=port, ssl_context=context)
+    #app.run(debug=DEBUG, host=host, port=port, ssl_context=context)
     # app.run(debug=DEBUG, host=host, port=port)
 
 
 
     # For HTTP (take note of port)
-    # app.run(debug=False, host=host, port=port,  threaded=True)
+    app.run(debug=False, host=host, port=port,  threaded=True)
