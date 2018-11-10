@@ -1,3 +1,6 @@
+login:
+	docker login -u oauth2accesstoken -p "$(gcloud auth print-access-token)" https://gcr.io
+
 build:
 	docker build . -t ibrest
 	docker build ibheadless -t ibgw
