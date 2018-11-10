@@ -28,7 +28,7 @@ socat TCP-LISTEN:4003,fork TCP:127.0.0.1:4002&
     /var/run/xvfb/ \
     java \
     -cp \
-    /usr/share/java/ib-tws/jts.jar:/usr/share/java/ib-tws/total.jar:/usr/share/java/ibcontroller/ibcontroller.jar \
+    /root/Jts/ibgateway/973/jars/jts4launch-973.jar:/root/Jts/ibgateway/973/jars/total-2018.jar:/usr/share/java/ibcontroller/ibcontroller.jar \
     -Xmx512M \
     ibcontroller.IBGatewayController \
     $conf

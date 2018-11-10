@@ -44,50 +44,6 @@ api = Api(app)
 log = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------
-# Authentication
-# ---------------------------------------------------------------------
-def authenticate(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        if not getattr(func, 'authenticated', True) or g.serializer is None:
-            return func(*args, **kwargs)
-
-        # authorized is true when the token from the decrypted Beacon-Token matches either our current or last token
-        # log.debug('Auth looking for flare in {}'.format(request))
-        flare = request.headers.get('Beacon-Flare', None)
-        # log.debug('Auth  flare: {}'.format(flare))
-        if flare is None:
-            log.warn('No Beacon-Flare in header')
-            abort(401)
-
-        # TODO remove this hack when not developing
-        if flare == '1p2o3i4u5y':
-            log.warn('Using vulnerable Beacon-Flare')
-            return func(*args, **kwargs)
-
-        ibrest_info = g.serializer.loads(flare)
-        authorized = False
-        # if ibrest_info['ip'] == g.current_ip:
-        if ibrest_info['token'] in [g.beacon_current_token, g.beacon_last_token]:
-            authorized = True
-
-        log.debug('Authorized = {}'.format(authorized))
-        if authorized:
-            return func(*args, **kwargs)
-
-        abort(401)
-
-    return wrapper
-
-
-# NOTE(ihar): override to always authenticate
-def authenticate(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        return func(*args, **kwargs)
-
-
 def send_flare_to_gae():
     token = datetime.now().strftime('%D_%H:%M')
     # we want to save our last token in case we get a bit out of sync - both can be valid for a while
@@ -136,8 +92,6 @@ class History(Resource):
     """ Resource to handle requests for historical data (15min delayed)
     """
 
-    method_decorators = [authenticate]
-
     def get(self, symbol):
         """ Uses reqHistoricalData() to start a stream of historical data, then upon getting data in that streatm,
         cancels the stream with cancelHistoricalData() before returning the history
@@ -148,8 +102,6 @@ class History(Resource):
 class Market(Resource):
     """ Resource to handle requests for market data
     """
-
-    method_decorators = [authenticate]
 
     def get(self, symbol):
         """
@@ -162,8 +114,6 @@ class Market(Resource):
 class Order(Resource):
     """ Resource to handle requests for Order
     """
-    method_decorators = [authenticate]
-
     def get(self):
         """ Retrieves details of open orders using reqAllOpenOrders()
         """
@@ -215,9 +165,6 @@ class Order(Resource):
 class OrderFilled(Resource):
     """ Resource to get filled orders.
     """
-    method_decorators = [authenticate]
-
-
     def get(self):
         """ Retrieves details of filled orders using stored data in SQLite DB
         """
@@ -246,8 +193,6 @@ class OrderOCA(Resource):
     This behaves like an elaborate Bracketed Order, but the logic is handled by IBREST instead of the IB GW client since
     this OCA groups are meant to work on a preexisting position.
     """
-    method_decorators = [authenticate]
-
     def post(self):
         # Detect a JSON object being posted
         # Convert to not-unicode
@@ -260,8 +205,6 @@ class OrderOCA(Resource):
 class PortfolioPositions(Resource):
     """ Resource to handle requests for market data
     """
-    method_decorators = [authenticate]
-
     def get(self):
         """
         :return: JSON dict of dicts, with main keys being tickPrice, tickSize and optionComputation.
@@ -272,8 +215,6 @@ class PortfolioPositions(Resource):
 class AccountSummary(Resource):
     """ Resource to handle requests for account summary information
     """
-
-    method_decorators = [authenticate]
 
     def get(self):
         """
@@ -315,8 +256,6 @@ class AccountSummary(Resource):
 class AccountUpdate(Resource):
     """ Resource to handle requests for account update information.
     """
-    method_decorators = [authenticate]
-
     def get(self):
         """
         This endpoint does _not_ subscribe to account info (hence "Update" instead of "Updates" - use feed for that),
@@ -331,8 +270,6 @@ class AccountUpdate(Resource):
 class Executions(Resource):
     """ Resource to handle requests for recent executions.
     """
-    method_decorators = [authenticate]
-
     def get(self):
         """ Use optional filter params in querystring to retrieve execDetails from past 24hrs (IB API limitation):
         https://www.interactivebrokers.com/en/software/api/apiguide/java/executionfilter.htm
@@ -353,8 +290,6 @@ class ExecutionCommissions(Resource):
     """ Resource to get CommissionReports from past executions.  No guarantee as DB is wiped every time docker container
     is created.
     """
-    method_decorators = [authenticate]
-
     def get(self, execId=None):
         """ Retrieves details of filled orders using stored data in SQLite DB
         """
@@ -378,8 +313,6 @@ class ExecutionCommissions(Resource):
 class ClientState(Resource):
     """ Explore what the connection state for client connection to TWS
     """
-    method_decorators = [authenticate]
-
     def get(self):
         resp = dict(connected=dict())
         resp['connected'][g.client_id] = g.client_connection.isConnected()
@@ -488,4 +421,4 @@ if __name__ == '__main__':
 
 
     # For HTTP (take note of port)
-    app.run(debug=False, host=host, port=port,  threaded=True)
+    app.run(debug=True, host=host, port=port,  threaded=True)
